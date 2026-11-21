@@ -1,6 +1,7 @@
 import { db, isConfigured } from '@/lib/supabase';
 import { sendMessage, esc, verifyInitData } from '@/lib/telegram';
 import { som } from '@/lib/format';
+import { sessionFromRequest } from '@/lib/session';
 
 export async function POST(req) {
   if (!isConfigured()) return Response.json({ error: "Do'kon hali sozlanmagan" }, { status: 503 });
@@ -17,7 +18,8 @@ export async function POST(req) {
     return Response.json({ error: "Savat bo'sh" }, { status: 400 });
 
   const items = b.items.map((i) => ({ product_id: String(i.product_id), size: String(i.size), qty: parseInt(i.qty, 10) }));
-  const user = verifyInitData(b.initData);
+  const user = verifyInitData(b.initData) || (await sessionFromRequest(req));
+  if (!user?.id) return Response.json({ error: 'Buyurtma berish uchun Telegram orqali kiring' }, { status: 401 });
 
   const { data: order, error } = await db().rpc('place_order', {
     p_items: items, p_name: name, p_phone: phone, p_address: address, p_comment: comment,
