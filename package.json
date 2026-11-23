@@ -1,17 +1,14 @@
 {
   "name": "ikat-by-malika-shakirova",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
+  "description": "Ikat by Malika Shakirova - Telegram bot + veb-do'kon",
+  "main": "server/index.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "build": "node -e \"console.log('Build kerak emas')\""
   },
-  "dependencies": {
-    "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.119.2",
-    "next": "^15.5.29",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
-  }
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2" }
 }
