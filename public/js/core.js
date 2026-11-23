@@ -2,7 +2,7 @@
 /* ===== Umumiy yordamchilar: holat, API, oynalar, formatlar ===== */
 const G = {
   cfg: null, me: null, token: null, products: [], pmap: {}, cart: {},
-  tab: 'shop', cat: 'all', q: '', atab: 'today',
+  tab: 'shop', cat: 'all', q: '', atab: 'today', keep: KEEP,
   tg: window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData ? window.Telegram.WebApp : null
 };
 const $ = (s, r = document) => r.querySelector(s);
@@ -18,10 +18,10 @@ const LS = {
 
 /* ---------- formatlar ---------- */
 const group = (n) => String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-const money = (n) => group(n) + " so'm";
-const priceHtml = (n, unit) => `<span class="price">${group(n)}<small>so'm${unit === 'metr' ? ' / m' : ''}</small></span>`;
+const money = (n) => group(n) + ` ${_t("so'm")}`;
+const priceHtml = (n, unit) => `<span class="price">${group(n)}<small>${_t("so'm")}${unit === 'metr' ? ' / m' : ''}</small></span>`;
 const fmtNum = (n) => String(Math.round((+n + Number.EPSILON) * 100) / 100).replace('.', ',');
-const unitOf = (u) => (u === 'metr' ? 'm' : 'dona');
+const unitOf = (u) => _t(u === 'metr' ? 'm' : 'dona');
 const qtyStr = (q, u) => fmtNum(q) + ' ' + unitOf(u);
 const stepOf = (p) => (p.unit === 'metr' ? 0.5 : 1);
 const clampR = (n) => Math.round(n * 100) / 100;
@@ -32,7 +32,7 @@ const df = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: '2
 const fmtDT = (t) => (t ? dtf.format(t).replace(',', '') : '—');
 const fmtD = (t) => (t ? df.format(t) : '—');
 const dayKeyT = (t) => new Date(t + 5 * 3600e3).toISOString().slice(0, 10);
-const MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+const MONTHS = [_t('Yanvar'), _t('Fevral'), _t('Mart'), _t('Aprel'), _t('May'), _t('Iyun'), _t('Iyul'), _t('Avgust'), _t('Sentabr'), _t('Oktabr'), _t('Noyabr'), _t('Dekabr')];
 const monthName = (ym) => MONTHS[+ym.slice(5, 7) - 1] + ' ' + ym.slice(0, 4);
 
 function hap(kind = 'light') {
@@ -48,12 +48,12 @@ async function api(path, opt = {}) {
       headers: { 'Content-Type': 'application/json', ...(G.token ? { Authorization: 'Bearer ' + G.token } : {}) },
       body: opt.body ? JSON.stringify(opt.body) : undefined
     });
-  } catch { throw new Error("Internet aloqasi yo'q yoki server javob bermayapti"); }
+  } catch { throw new Error(_t("Internet aloqasi yo'q yoki server javob bermayapti")); }
   let j = {};
   try { j = await r.json(); } catch { /* bo'sh javob */ }
   if (!r.ok) {
     if (r.status === 401 && j.code === 'auth' && G.token && G.me) G.logout(true);
-    throw Object.assign(new Error(j.error || 'Xatolik yuz berdi'), { status: r.status });
+    throw Object.assign(new Error(_tErr(j.error || _t('Xatolik yuz berdi'))), { status: r.status });
   }
   return j;
 }
@@ -98,7 +98,7 @@ function openSheet(html, { cls = '', onClose, guard } = {}) {
       if (prev && prev.isConnected) prev.focus({ preventScroll: true });
       if (onClose) onClose();
     },
-    async ask() { if (!guard || !guard() || await confirmBox('Yopish', "Kiritilgan ma'lumotlar saqlanmaydi.", 'Yopish', true)) s.close(); }
+    async ask() { if (!guard || !guard() || await confirmBox(_t('Yopish'), _t("Kiritilgan ma'lumotlar saqlanmaydi."), _t('Yopish'), true)) s.close(); }
   };
   sheets.push(s);
   back.addEventListener('click', (e) => { if (e.target === back) s.ask(); });
@@ -110,13 +110,13 @@ document.addEventListener('keydown', (e) => {
   const lb = $('.lightbox');
   if (lb) lb.remove(); else if (sheets.length) sheets[sheets.length - 1].ask();
 });
-const sheetTitle = (t) => `<div class="sh-title"><span>${t}</span><button class="x" data-close aria-label="Yopish">${ic('x')}</button></div>`;
+const sheetTitle = (t) => `<div class="sh-title"><span>${t}</span><button class="x" data-close aria-label="${_t('Yopish')}">${ic('x')}</button></div>`;
 
-function confirmBox(title, text, ok = 'Ha', danger = false) {
+function confirmBox(title, text, ok = _t('Ha'), danger = false) {
   return new Promise((resolve) => {
     let val = false;
     const s = openSheet(`${sheetTitle(esc(title))}<p class="muted lead">${esc(text)}</p>
-      <div class="two"><button class="btn ghost" data-close>Bekor</button><button class="btn ${danger ? 'danger' : ''}" id="cf-ok">${esc(ok)}</button></div>`,
+      <div class="two"><button class="btn ghost" data-close>${_t('Bekor')}</button><button class="btn ${danger ? 'danger' : ''}" id="cf-ok">${esc(ok)}</button></div>`,
     { cls: 'small', onClose: () => resolve(val) });
     $('#cf-ok', s.el).onclick = () => { val = true; s.close(); };
   });
@@ -125,7 +125,7 @@ function confirmBox(title, text, ok = 'Ha', danger = false) {
 function lightbox(src) {
   const lb = document.createElement('div');
   lb.className = 'lightbox';
-  lb.innerHTML = `<img src="${esc(src)}" alt=""><button class="x" aria-label="Yopish">${ic('x')}</button>`;
+  lb.innerHTML = `<img src="${esc(src)}" alt=""><button class="x" aria-label="${_t('Yopish')}">${ic('x')}</button>`;
   lb.onclick = () => lb.remove();
   document.body.appendChild(lb);
 }
@@ -133,10 +133,10 @@ function lightbox(src) {
 /* ---------- Rasmni kichraytirish ---------- */
 function loadImg(file) {
   return new Promise((resolve, reject) => {
-    if (!file || !/^image\//.test(file.type)) return reject(new Error('Faqat rasm fayli tanlang'));
+    if (!file || !/^image\//.test(file.type)) return reject(new Error(_t('Faqat rasm fayli tanlang')));
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Bu rasm formati ochilmadi. JPG yoki PNG tanlang")); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(_t('Bu rasm formati ochilmadi. JPG yoki PNG tanlang'))); };
     img.src = url;
   });
 }
@@ -153,7 +153,7 @@ function shrink(img, max, q) {
 const readImage = async (file, max = 1280, q = 0.82) => shrink(await loadImg(file), max, q);
 
 /* ---------- Kichik UI bo'laklari ---------- */
-const brandHtml = (tag) => `<header class="head"><div class="head-in"><button class="brand" data-home aria-label="Bosh sahifa"><svg viewBox="0 0 100 130"><use href="#logo"/></svg><span><b>IKAT</b><small>by Malika Shakirova</small></span></button>${tag ? `<span class="tag">${tag}</span>` : ''}</div></header>`;
+const brandHtml = (tag) => `<header class="head"><div class="head-in"><button class="brand" data-home aria-label="${_t('Bosh sahifa')}"><img src="/img/mark.webp" width="360" height="360" alt=""><span><b>IKAT</b><small>by Malika Shakirova</small></span></button><span class="head-r">${tag ? `<span class="tag">${tag}</span>` : ''}${langHtml()}</span></div></header>`;
 const orn = '<div class="orn" aria-hidden="true"></div>';
 const emptyHtml = (icon, title, text = '', extra = '') => `<div class="empty">${ic(icon)}${title ? `<h3>${title}</h3>` : ''}${text ? `<p>${text}</p>` : ''}${extra}</div>`;
 
@@ -175,20 +175,20 @@ const telHref = (p) => 'tel:' + esc(String(p || '').replace(/[^\d+]/g, ''));
 const initial = (n) => esc((n || '?').trim().charAt(0).toUpperCase());
 
 const STATUS = {
-  pending: ['wt', 'Tekshirilmoqda'], accepted: ['ok', 'Qabul qilindi'], shipped: ['gd', "Yo'lda"], delivered: ['ok', 'Topshirildi'],
-  rejected: ['er', 'Rad etildi'], cancelled: ['er', 'Bekor qilindi']
+  pending: ['wt', _t('Tekshirilmoqda')], accepted: ['ok', _t('Qabul qilindi')], shipped: ['gd', _t("Yo'lda")], delivered: ['ok', _t('Topshirildi')],
+  rejected: ['er', _t('Rad etildi')], cancelled: ['er', _t('Bekor qilindi')]
 };
 const chip = (cls, text) => `<span class="st-chip ${cls}">${text}</span>`;
 const stChip = (o) => chip(...(STATUS[o.status] || ['gr', esc(o.status)]));
-const kindChip = (o) => (o.kind === 'debt' ? chip('gd', ic('wallet') + ' Nasiya') : chip('gr', ic('credit-card') + " To'liq to'lov"));
-const METH = { payme: 'Payme', click: 'Click', paynet: 'Paynet', naqd: 'Naqd' };
+const kindChip = (o) => (o.kind === 'pickup' ? chip('gd', `${ic('store')} ${_t('Borib olish')}`) : o.kind === 'debt' ? chip('gd', `${ic('wallet')} ${_t('Nasiya')}`) : chip('gr', `${ic('send')} ${_t('Online olish')}`));
+const METH = { payme: 'Payme', click: 'Click', paynet: 'Paynet', naqd: _t('Naqd') };
 const METH_COLOR = { payme: '#33cccc', click: '#2a90ff', paynet: '#ffcb05' };
-const PAY_ST = { pending: ['wt', 'Tekshiruvda'], confirmed: ['ok', 'Tasdiqlandi'], rejected: ['er', 'Rad etildi'] };
-const PAY_LAB = { full: "To'liq to'lov", down: "Boshlang'ich to'lov", repay: "Nasiya to'lovi" };
+const PAY_ST = { pending: ['wt', _t('Tekshiruvda')], confirmed: ['ok', _t('Tasdiqlandi')], rejected: ['er', _t('Rad etildi')] };
+const PAY_LAB = { full: _t("To'liq to'lov"), down: _t("Boshlang'ich to'lov"), repay: _t("Nasiya to'lovi") };
 
 /** Buyurtma hisobi */
 function billHtml(rows, total) {
-  return `<div class="bill"><div class="bill-band"></div><table><thead><tr><th>Mahsulot</th><th class="r">Narx</th><th class="r">Soni</th><th class="r">Summa</th></tr></thead>
+  return `<div class="bill"><div class="bill-band"></div><table><thead><tr><th>${_t('Mahsulot')}</th><th class="r">${_t('Narx')}</th><th class="r">${_t('Soni')}</th><th class="r">${_t('Summa')}</th></tr></thead>
     <tbody>${rows.map((r) => `<tr><td><b>${esc(r.name)}</b>${r.size ? `<i class="sz">${esc(r.size)}</i>` : ''}</td><td class="r">${group(r.price)}</td><td class="r">${fmtNum(r.qty)}${r.unit === 'metr' ? ' m' : ''}</td><td class="r"><b>${group(r.sum)}</b></td></tr>`).join('')}</tbody>
-    <tfoot><tr><td>Jami</td><td class="r" colspan="3">${money(total)}</td></tr></tfoot></table></div>`;
+    <tfoot><tr><td>${_t('Jami')}</td><td class="r" colspan="3">${money(total)}</td></tr></tfoot></table></div>`;
 }

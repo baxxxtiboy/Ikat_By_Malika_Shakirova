@@ -91,14 +91,16 @@ function createBot(h) {
     const answer = (text, alert) => call('answerCallbackQuery', { callback_query_id: q.id, text, show_alert: !!alert });
     if (!h.isAdminChat(chat)) return answer("Ruxsat yo'q");
     const [kind, orderId, payId] = String(q.data || '').split(':');
-    const action = kind === 'pc' ? 'confirm' : kind === 'pr' ? 'reject' : null;
+    const action = kind === 'pc' || kind === 'kc' ? 'confirm' : kind === 'pr' || kind === 'kr' ? 'reject' : null;
     if (!action) return answer('');
+    const pickup = kind[0] === 'k', yes = action === 'confirm';
     const clear = () => call('editMessageReplyMarkup', { chat_id: chat, message_id: q.message.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => {});
     try {
-      await h.decidePayment(orderId, payId, action);
-      await answer(action === 'confirm' ? 'Tasdiqlandi ✅' : 'Rad etildi ❌');
+      if (pickup) await h.setStatus(orderId, yes ? 'accepted' : 'rejected');
+      else await h.decidePayment(orderId, payId, action);
+      await answer(yes ? 'Tasdiqlandi ✅' : 'Rad etildi ❌');
       await clear();
-      await send(chat, `${action === 'confirm' ? "✅ To'lov tasdiqlandi" : "❌ To'lov rad etildi"} — №${esc(orderId)}`);
+      await send(chat, `${pickup ? (yes ? '✅ Buyurtma tasdiqlandi' : '❌ Buyurtma rad etildi') : yes ? "✅ To'lov tasdiqlandi" : "❌ To'lov rad etildi"} — №${esc(orderId)}`);
     } catch (e) {
       await answer(e.message.slice(0, 180), true).catch(() => {});
       if (e.status) await clear();
@@ -112,6 +114,9 @@ function createBot(h) {
     const extra = opts.pay ? { reply_markup: { inline_keyboard: [[
       { text: '✅ Tasdiqlash', callback_data: `pc:${opts.pay.orderId}:${opts.pay.payId}` },
       { text: '❌ Rad etish', callback_data: `pr:${opts.pay.orderId}:${opts.pay.payId}` }
+    ]] } } : opts.pickup ? { reply_markup: { inline_keyboard: [[
+      { text: '✅ Tasdiqlash', callback_data: `kc:${opts.pickup.orderId}` },
+      { text: '❌ Rad etish', callback_data: `kr:${opts.pickup.orderId}` }
     ]] } } : {};
     try {
       // Telegram izohi 1024 belgidan oshmaydi: uzun matn alohida xabar bo'lib ketadi

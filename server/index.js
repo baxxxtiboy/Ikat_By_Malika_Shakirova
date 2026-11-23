@@ -27,6 +27,7 @@ const createBot = require('./bot');
 const PORT = Number(process.env.PORT) || 3000;
 const NAME = 'Ikat by Malika Shakirova';
 const DAY = 86400e3;
+const MAX_PICKUP = 3;                                       // bir mijozda bir vaqtda ochiq «borib olish» buyurtmalari
 const METHODS = { payme: 'Payme', click: 'Click', paynet: 'Paynet' };
 const LIVE = ['accepted', 'shipped', 'delivered'];          // qabul qilingan buyurtma holatlari
 const DEFAULT_CATS = [
@@ -188,6 +189,40 @@ function tellUser(o, msg) {
   if (u && u.tgId) bot.notifyUser(u.tgId, msg);
 }
 
+/* ---------------------------------------------------------------- buyurtma holati */
+const ALLOWED = {
+  full: { accepted: ['shipped', 'delivered', 'cancelled'], shipped: ['delivered', 'cancelled'] },
+  pickup: { pending: ['accepted', 'rejected'], accepted: ['delivered', 'cancelled'] }      // borib olish: to'lov do'konda
+};
+async function setStatus(id, to) {
+  const o = store.get('orders', String(id));
+  if (!o) throw bad('Buyurtma topilmadi', 404);
+  const pickup = o.kind === 'pickup';
+  if (!((pickup ? ALLOWED.pickup : ALLOWED.full)[o.status] || []).includes(to)) throw bad("Holatni bunday o'zgartirib bo'lmaydi");
+  o.status = to; o[to + 'At'] = now();
+  if (pickup && to === 'delivered') {
+    o.payments.push({ id: hex(4), amount: o.total, method: 'naqd', purpose: 'full', status: 'confirmed', at: now(), decidedAt: now(), file: null, note: '' });
+  }
+  if (to === 'cancelled' || to === 'rejected') {
+    for (const p of o.payments) if (p.status === 'pending') { p.status = 'rejected'; p.decidedAt = now(); }
+    await restoreStock(o);
+  }
+  await store.put('orders', o);
+  if (o.acceptedAt) {
+    await refreshMonth(U.monthKey(o.acceptedAt));
+    if (U.monthKey(o.acceptedAt) !== U.monthKey(now())) await refreshMonth(U.monthKey(now()));
+  }
+  const place = S.contact.address ? `\n📍 ${bot.esc(S.contact.address)}` : '';
+  tellUser(o, {
+    accepted: `✅ <b>Buyurtma №${o.no} tasdiqlandi!</b>\nBorib olishingiz mumkin.${place}\n💵 To'lov do'konda: <b>${U.money(o.total)}</b>${callUs()}`,
+    rejected: `❌ <b>Buyurtma №${o.no} bekor qilindi.</b>${callUs()}`,
+    shipped: `🚚 <b>Buyurtma №${o.no} yo'lga chiqdi.</b>`,
+    delivered: `📦 <b>Buyurtma №${o.no} topshirildi.</b> Rahmat! ✨`,
+    cancelled: `❌ <b>Buyurtma №${o.no} bekor qilindi.</b>${callUs()}`
+  }[to]);
+  return o;
+}
+
 /* ---------------------------------------------------------------- to'lovni tasdiqlash / rad etish */
 async function decidePayment(orderId, payId, action) {
   const o = store.get('orders', String(orderId));
@@ -235,16 +270,29 @@ const bot = createBot({
   verifyLinkCode: (code) => !!(S.linkCode && S.linkCode.exp > now() && code && U.safeEq(S.linkCode.code, String(code).trim().toUpperCase())),
   setAdminChat: async (chat) => { S.adminChat = chat; S.linkCode = null; await store.put('settings', S); },
   isAdminChat: (chat) => !!adminChat() && String(chat) === String(adminChat()),
-  adminChat, decidePayment
+  adminChat, decidePayment, setStatus
 });
+
+function itemLines(o) {
+  const e = bot.esc;
+  const lines = o.items.slice(0, 12).map((i) => `• ${e(i.name)}${i.size ? ` — <b>${e(i.size)}</b>` : ''} × ${i.qty} ${unitLabel(i.unit)} = ${U.money(i.sum)}`);
+  if (o.items.length > 12) lines.push(`…va yana ${o.items.length - 12} ta`);
+  return lines.join('\n');
+}
+
+async function notifyPickup(o) {
+  const x = o.userSnap, e = bot.esc;
+  await bot.notifyAdmin(
+    `🏬 <b>Borib olish — yangi buyurtma №${o.no}</b>\n👤 ${e(x.name)} (@${e(x.username)})\n📞 ${e(x.phone)}\n📍 ${e(x.region)}\n\n${itemLines(o)}` +
+    `\n\n🧾 Jami: <b>${U.money(o.total)}</b>\n💵 To'lov do'konda` + (o.comment ? `\n💬 ${e(o.comment)}` : ''),
+    { pickup: { orderId: o.id } });
+}
 
 async function notifyPayment(o, p, title) {
   const x = o.userSnap, e = bot.esc;
-  const lines = o.items.slice(0, 12).map((i) => `• ${e(i.name)}${i.size ? ` — <b>${e(i.size)}</b>` : ''} × ${i.qty} ${unitLabel(i.unit)} = ${U.money(i.sum)}`);
-  if (o.items.length > 12) lines.push(`…va yana ${o.items.length - 12} ta`);
-  const kind = p.purpose === 'full' ? "To'liq to'lov" : p.purpose === 'down' ? `Nasiya — boshlang'ich ${o.debt.percent}%` : "Nasiya to'lovi";
+  const kind = p.purpose === 'full' ? "Online to'lov" : p.purpose === 'down' ? `Nasiya — boshlang'ich ${o.debt.percent}%` : "Nasiya to'lovi";
   const text =
-    `${title}\n👤 ${e(x.name)} (@${e(x.username)})\n📞 ${e(x.phone)}\n📍 ${e(x.region)}${o.address ? ', ' + e(o.address) : ''}\n\n${lines.join('\n')}` +
+    `${title}\n👤 ${e(x.name)} (@${e(x.username)})\n📞 ${e(x.phone)}\n📍 ${e(x.region)}${o.address ? ', ' + e(o.address) : ''}\n\n${itemLines(o)}` +
     `\n\n🧾 Jami: <b>${U.money(o.total)}</b>\n💳 ${kind}: <b>${U.money(p.amount)}</b> (${METHODS[p.method] || p.method})` +
     (o.comment ? `\n💬 ${e(o.comment)}` : '') + (p.note ? `\n💬 ${e(p.note)}` : '');
   const f = p.file ? await store.getFile(p.file) : null;
@@ -291,7 +339,7 @@ app.get('/api/file/:id', wrap(async (req, res) => {
 /* ---- ochiq */
 app.get('/api/config', (req, res) => {
   res.json({
-    botName: S.botName, regions: U.REGIONS, cats: S.cats, debt: S.debt, contact: S.contact,
+    botName: S.botName, regions: U.REGIONS, cats: S.cats, contact: S.contact,
     methods: Object.entries(METHODS).map(([id, label]) => ({ id, label }))
   });
 });
@@ -394,23 +442,22 @@ app.post('/api/orders', auth(), wrap(async (req, res) => {
   const u = req.user, b = req.body || {};
   if (u.role === 'admin') throw bad('Admin buyurtma bera olmaydi');
   limit(req, 'order', 20);
-  const kind = b.kind === 'debt' ? 'debt' : 'full';
-  if (!METHODS[b.method]) throw bad("To'lov usulini tanlang");
+  if (b.kind === 'debt') throw bad("Nasiya endi yo'q");
+  const kind = b.kind === 'pickup' ? 'pickup' : 'full', pickup = kind === 'pickup';
+  if (!pickup && !METHODS[b.method]) throw bad("To'lov usulini tanlang");
   if (!Array.isArray(b.items) || !b.items.length) throw bad("Savat bo'sh");
   if (b.items.length > 100) throw bad("Juda ko'p mahsulot");
-  const address = str(b.address, 200);
-  if (address.length < 5) throw bad('Yetkazish manzilini kiriting');
-  if (kind === 'debt') {
-    if (!S.debt.enabled) throw bad("Nasiya hozircha yo'q");
-    if (b.consent !== true) throw bad("Shartlarga rozilik belgisini qo'ying");
-  }
-  const chekId = await saveImage(b.receipt);
+  const address = pickup ? '' : str(b.address, 200);
+  if (!pickup && address.length < 5) throw bad('Yetkazish manzilini kiriting');
+  // To'lovsiz buyurtma omborni band qiladi, shuning uchun ochiq «borib olish» soni cheklangan
+  const open = () => store.list('orders').filter((o) => o.userId === u.id && o.kind === 'pickup' && ['pending', 'accepted'].includes(o.status)).length;
+  const chekId = pickup ? null : await saveImage(b.receipt);
 
   // ---- sinxron bo'lim: tekshirish + ombordan ayirish (orada await yo'q — ikki kishi bitta kiyimni ola olmaydi)
   const items = [], picked = [], seen = new Set();
   let total = 0;
   try {
-    if (kind === 'debt' && activeDebts(u.id).length >= S.debt.max) throw bad(`Sizda allaqachon ${S.debt.max} ta nasiya bor. Avval uni to'lang.`);
+    if (pickup && open() >= MAX_PICKUP) throw bad(`Sizda ${MAX_PICKUP} ta olib ketilmagan buyurtma bor. Avval ularni olib keting.`);
     for (const r of b.items) {
       const p = store.get('products', String(r && r.id));
       if (!p || !p.active) throw bad("Savatdagi mahsulot endi sotuvda yo'q");
@@ -432,24 +479,20 @@ app.post('/api/orders', auth(), wrap(async (req, res) => {
   } catch (e) { dropFile(chekId); throw e; }
   for (const [, v, qty] of picked) v.stock = U.r2(v.stock - qty);
   S.seq += 1;
-  const pay = {
-    id: hex(4), amount: kind === 'debt' ? Math.max(1, U.r0((total * S.debt.percent) / 100)) : total, method: b.method,
-    purpose: kind === 'debt' ? 'down' : 'full', status: 'pending', at: now(), file: chekId
-  };
+  const pay = pickup ? null : { id: hex(4), amount: total, method: b.method, purpose: 'full', status: 'pending', at: now(), file: chekId };
   const order = {
     id: String(S.seq), no: S.seq, userId: u.id, userSnap: { name: u.name, username: u.username, phone: u.phone, region: u.region },
-    items, total, address, comment: str(b.comment, 500), kind, status: 'pending', createdAt: now(), acceptedAt: null, payments: [pay],
-    debt: kind === 'debt' ? { percent: S.debt.percent, days: S.debt.days, dueAt: null, consentAt: now(), consentText: S.debt.text } : null
+    items, total, address, comment: str(b.comment, 500), kind, status: 'pending', createdAt: now(), acceptedAt: null, payments: pay ? [pay] : [],
+    debt: null
   };
-  if (kind === 'debt') u.consent = { at: now(), text: order.debt.consentText };
-  if (!u.address) u.address = address;
+  if (!u.address && address) u.address = address;
   // ----
   for (const p of new Set(picked.map((x) => x[0]))) await store.put('products', p);
   await store.put('settings', S);
   await store.put('users', u);
   await store.put('orders', order);
   res.json({ order: orderOut(order) });
-  notifyPayment(order, pay, `🆕 <b>Yangi buyurtma №${order.no}</b>`).catch((e) => console.error('notify:', e.message));
+  (pickup ? notifyPickup(order) : notifyPayment(order, pay, `🆕 <b>Yangi buyurtma №${order.no}</b>`)).catch((e) => console.error('notify:', e.message));
 }));
 
 app.post('/api/orders/:id/pay', auth(), wrap(async (req, res) => {
@@ -488,11 +531,13 @@ admin.get('/overview', (req, res) => {
     const out = orderOut(o, true);
     for (const p of out.payments) if (p.status === 'pending') pending.push({ order: out, pay: p });
   }
-  pending.sort((a, b) => a.pay.at - b.pay.at);
+  for (const o of orders) if (o.kind === 'pickup' && o.status === 'pending') pending.push({ order: orderOut(o, true), pay: null });
+  const at = (x) => (x.pay ? x.pay.at : x.order.createdAt);
+  pending.sort((a, b) => at(a) - at(b));
   res.json({
     users: store.list('users').filter((u) => u.role !== 'admin').length, products: store.list('products').length,
     todayOrders: t.length, todaySum: U.r0(t.reduce((s, o) => s + o.total, 0)),
-    debtTotal: U.r0(orders.reduce((s, o) => s + owedOf(o), 0)), pending
+    pickups: orders.filter((o) => o.kind === 'pickup' && ['pending', 'accepted'].includes(o.status)).length, pending
   });
 });
 
@@ -502,7 +547,7 @@ admin.get('/orders', (req, res) => {
   if (today) list = list.filter((o) => U.dayKey(o.createdAt) === U.dayKey(now()));
   if (/^\d{4}-\d\d-\d\d$/.test(from || '')) list = list.filter((o) => o.createdAt >= dayRange(from)[0]);
   if (/^\d{4}-\d\d-\d\d$/.test(to || '')) list = list.filter((o) => o.createdAt < dayRange(to)[1]);
-  if (status && status !== 'all') list = list.filter((o) => (status === 'debt' || status === 'full' ? o.kind === status : o.status === status));
+  if (status && status !== 'all') list = list.filter((o) => (['debt', 'full', 'pickup'].includes(status) ? o.kind === status : o.status === status));
   if (q) {
     const s = String(q).toLowerCase();
     list = list.filter((o) => `${o.no} ${o.userSnap.name} ${o.userSnap.username} ${o.userSnap.phone} ${o.userSnap.region}`.toLowerCase().includes(s));
@@ -517,23 +562,7 @@ admin.post('/orders/:id/payments/:pid', wrap(async (req, res) => {
 }));
 
 admin.post('/orders/:id/status', wrap(async (req, res) => {
-  const o = store.get('orders', req.params.id), to = req.body && req.body.status;
-  if (!o) throw bad('Buyurtma topilmadi', 404);
-  const allowed = { accepted: ['shipped', 'delivered', 'cancelled'], shipped: ['delivered', 'cancelled'] }[o.status] || [];
-  if (!allowed.includes(to)) throw bad("Holatni bunday o'zgartirib bo'lmaydi");
-  o.status = to; o[to + 'At'] = now();
-  if (to === 'cancelled') {
-    for (const p of o.payments) if (p.status === 'pending') { p.status = 'rejected'; p.decidedAt = now(); }
-    await restoreStock(o);
-  }
-  await store.put('orders', o);
-  if (to === 'cancelled') await refreshMonth(U.monthKey(o.acceptedAt));
-  tellUser(o, {
-    shipped: `🚚 <b>Buyurtma №${o.no} yo'lga chiqdi.</b>`,
-    delivered: `📦 <b>Buyurtma №${o.no} topshirildi.</b> Rahmat! ✨`,
-    cancelled: `❌ <b>Buyurtma №${o.no} bekor qilindi.</b>${callUs()}`
-  }[to]);
-  res.json({ order: orderOut(o, true) });
+  res.json({ order: orderOut(await setStatus(req.params.id, req.body && req.body.status), true) });
 }));
 
 admin.post('/orders/:id/cash', wrap(async (req, res) => {
@@ -702,7 +731,7 @@ admin.put('/settings', wrap(async (req, res) => {
     }
   }
   if (b.contact) n.contact = {
-    phone: str(b.contact.phone, 30).replace(/[^\d+ ()-]/g, ''), whatsapp: str(b.contact.whatsapp, 20).replace(/\D/g, ''),
+    address: str(b.contact.address, 200), phone: str(b.contact.phone, 30).replace(/[^\d+ ()-]/g, ''), whatsapp: str(b.contact.whatsapp, 20).replace(/\D/g, ''),
     telegram: str(b.contact.telegram, 60).replace(/^@/, '').replace(/[^\w]/g, ''), instagram: str(b.contact.instagram, 60).replace(/^@/, '').replace(/[^\w.]/g, '')
   };
   if (b.debt) {
@@ -768,7 +797,7 @@ async function seed() {
   const defaults = {
     id: 'main', botName: NAME, seq: 1000, adminChat: null, linkCode: null, cats: DEFAULT_CATS,
     pay: { payme: { card: '', holder: '', link: '' }, click: { card: '', holder: '', link: '' }, paynet: { card: '', holder: '', link: '' } },
-    contact: { phone: '', whatsapp: '', telegram: '', instagram: '' },
+    contact: { address: '', phone: '', whatsapp: '', telegram: '', instagram: '' },
     debt: { enabled: true, percent: 30, days: 14, max: 2, text: DEFAULT_CONSENT },
     secret: hex(32)
   };
@@ -778,13 +807,25 @@ async function seed() {
   else S = saved;
   SECRET = U.env('SECRET') || S.secret;
 
-  if (!store.list('users').some((u) => u.role === 'admin')) {
+  // Admin logini: ADMIN_LOGIN (bo'lmasa «admin»). Keyin o'zgartirilsa, mavjud admin akkaunti qayta nomlanadi.
+  const wanted = U.env('ADMIN_LOGIN');
+  let login = wanted || 'admin';
+  const admin = store.list('users').find((u) => u.role === 'admin'), holder = findUser(login);
+  if (!NAME_RE.test(login) || (holder && holder !== admin)) {
+    console.error(`ADMIN_LOGIN qabul qilinmadi: «${login}» — ${holder ? 'bu nom mijozda band' : '3–20 ta belgi: lotin harflari, raqam, nuqta yoki _'}`);
+    login = admin ? admin.username : 'admin';
+  } else if (admin && wanted && admin.username !== login) {
+    admin.username = login;
+    await store.put('users', admin);
+    console.log(`Admin logini o'zgartirildi: «${login}»`);
+  }
+  if (!admin) {
     const given = U.env('ADMIN_PASSWORD'), pw = given || hex(5);
     await store.put('users', {
-      id: U.uid(), username: 'admin', name: 'Admin', phone: '', region: '', address: '', role: 'admin',
+      id: U.uid(), username: login, name: 'Admin', phone: '', region: '', address: '', role: 'admin',
       pass: await U.hashPassword(pw), avatar: null, createdAt: now(), tgId: null, blocked: false
     });
-    console.log(given ? 'Admin akkaunti yaratildi: login «admin», parol — ADMIN_PASSWORD' : `Admin akkaunti yaratildi: admin / ${pw}  (Sozlama bo'limida almashtiring)`);
+    console.log(given ? `Admin akkaunti yaratildi: login «${login}», parol — ADMIN_PASSWORD` : `Admin akkaunti yaratildi: ${login} / ${pw}  (Sozlama bo'limida almashtiring)`);
   }
 }
 
