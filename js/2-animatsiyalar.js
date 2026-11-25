@@ -10,11 +10,15 @@
      t     — vaqt: 0 = boshlanish, 0.5 = o‘rtasi, 1 = tugash
      eski  — oldingi rasm (yoki oltin naqsh). U orqa fonga oldindan chizilgan
 
+   Bular "kuchli" rejimda ishlaydi. "sodda" rejimda faqat sodda() ishlaydi.
    Yangi effekt qo‘shish: ANIMATSIYALAR ichiga yangi funksiya yozing va
    1-mahsulotlar.js da uning nomini "animatsiya" ga yozing.
    ===================================================================== */
 
 const OLTIN = "#f3d27a";
+
+// Sodda rejimmi? (sozlamasi: 1-mahsulotlar.js, DOKON.animatsiya)
+const SODDA = DOKON.animatsiya !== "kuchli";
 
 /* ---------- Kichik yordamchilar ---------- */
 
@@ -62,6 +66,13 @@ function zumradChiz(q, x, y, eni, boyi) {
 
 /* ---------- EFFEKTLAR ---------- */
 const ANIMATSIYALAR = {
+
+  /* SODDA — yangi rasm asta paydo bo‘ladi (sodda rejimda hamma joyda shu) */
+  sodda(q, yangi, W, H, t) {
+    q.globalAlpha = t * t * (3 - 2 * t);
+    q.drawImage(yangi, 0, 0, W, H);
+    q.globalAlpha = 1;
+  },
 
   /* IPLAR — rasm tanda iplari kabi tepadan va pastdan kelib to‘qiladi.
      Haqiqiy ikat ham shunday: bo‘yalgan iplar yonma-yon taraladi.     */
@@ -357,7 +368,7 @@ async function animatsiyaOyna(canvas, effektNomi, eskiManzil, yangiManzil, vaqt)
   const q = canvas.getContext("2d");
   const yangi = kesibOl(yangiRasm, W, H);
   const eski = eskiRasm ? kesibOl(eskiRasm, W, H) : yangi;
-  const effekt = ANIMATSIYALAR[effektNomi] || ANIMATSIYALAR.iplar;
+  const effekt = SODDA ? ANIMATSIYALAR.sodda : ANIMATSIYALAR[effektNomi] || ANIMATSIYALAR.iplar;
 
   if (HARAKAT_KAM) { q.drawImage(yangi, 0, 0); return true; }
 
@@ -372,7 +383,7 @@ async function animatsiyaOyna(canvas, effektNomi, eskiManzil, yangiManzil, vaqt)
         effekt(q, yangi, W, H, t, eski);
         return requestAnimationFrame(kadr);
       }
-      const p = chekla((hozir - boshi - vaqt) / 1300);
+      const p = SODDA ? 1 : chekla((hozir - boshi - vaqt) / 1300);
       if (p < 1) {                                   // 2-qism: ipak to‘lqini
         ipakTolqin(q, yangi, W, H, p);
         return requestAnimationFrame(kadr);

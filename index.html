@@ -9,7 +9,16 @@
   <link rel="icon" href="rasmlar/favicon.png">
   <link rel="stylesheet" href="css/1-asosiy.css">
   <link rel="stylesheet" href="css/2-oyna.css">
-  <link rel="stylesheet" href="css/3-sehr.css">
+  <link rel="stylesheet" href="css/3-sehr.css" id="css-kuchli">
+  <link rel="stylesheet" href="css/4-sodda.css" id="css-sodda">
+
+  <!-- Tillar va mahsulotlar birinchi yuklanadi -->
+  <script src="js/0-tillar.js"></script>
+  <script src="js/1-mahsulotlar.js"></script>
+  <script>
+    // Sodda yoki kuchli: keraksiz uslub fayli olib tashlanadi
+    document.getElementById(DOKON.animatsiya === "kuchli" ? "css-sodda" : "css-kuchli").remove();
+  </script>
 </head>
 <body>
 
@@ -23,15 +32,16 @@
 
   <!-- ============ TEPA QISM ============ -->
   <div class="bosh">
+    <div class="tillar" data-tillar role="group" data-til-aria="tilniTanlash"></div>
     <header class="bosh-matn">
       <img class="belgi" src="rasmlar/belgi.webp" alt="" width="360" height="360">
       <h1><span>Ikat by</span> Malika Shakirova</h1>
-      <p>Rangni tanlang, ko‘ylak ko‘z oldingizda ipma-ip qayta to‘qiladi.</p>
+      <p data-til="boshMatn">Rangni tanlang va ko‘ylakni yaqindan ko‘ring.</p>
       <div class="bosh-tanlov">
-        <div id="bosh-ranglar" class="ranglar" role="group" aria-label="Ko‘ylak rangi"></div>
+        <div id="bosh-ranglar" class="ranglar" role="group" data-til-aria="koylakRangi"></div>
         <span id="bosh-nomi"></span>
       </div>
-      <a class="tugma" href="#katalog"><span>Katalogni ko‘rish</span></a>
+      <a class="tugma" href="#katalog"><span data-til="katalogniKorish">Katalogni ko‘rish</span></a>
     </header>
 
     <button id="bosh-rasm" class="zumrad" type="button" aria-label="Ko‘ylakni ochish">
@@ -47,7 +57,7 @@
   <footer class="past">
     <div class="past-quti">
       <img class="belgi" src="rasmlar/belgi.webp" alt="" width="360" height="360" loading="lazy">
-      <p>Buyurtma va narxlar uchun</p>
+      <p data-til="buyurtmaUchun">Buyurtma va narxlar uchun</p>
       <a class="past-tel" data-telefon href="#"></a>
       <a data-instagram="nom" href="#" target="_blank" rel="noopener"></a>
     </div>
@@ -61,10 +71,11 @@
 
     <div class="oyna-tepa">
       <span id="o-hisob"></span>
+      <div class="tillar" data-tillar role="group" data-til-aria="tilniTanlash"></div>
       <div class="oyna-boshqaruv">
-        <button type="button" id="o-oldingi" aria-label="Oldingi ko‘ylak"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg></button>
-        <button type="button" id="o-keyingi" aria-label="Keyingi ko‘ylak"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg></button>
-        <button type="button" id="o-yop" aria-label="Yopish"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+        <button type="button" id="o-oldingi" data-til-aria="oldingi"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg></button>
+        <button type="button" id="o-keyingi" data-til-aria="keyingi"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg></button>
+        <button type="button" id="o-yop" data-til-aria="yopish"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
       </div>
     </div>
 
@@ -83,23 +94,23 @@
         <p id="o-tavsif" class="kel" style="--k:1"></p>
 
         <div class="kel guruh" style="--k:2">
-          <span class="yorliq">Rang: <b id="o-rang-nomi"></b></span>
-          <div id="o-ranglar" class="ranglar" role="group" aria-label="Rang"></div>
+          <span class="yorliq"><span data-til="rang">Rang</span>: <b id="o-rang-nomi"></b></span>
+          <div id="o-ranglar" class="ranglar" role="group" data-til-aria="rang"></div>
         </div>
 
         <div class="kel guruh" style="--k:3">
-          <span class="yorliq">Yaqindan ko‘rish</span>
-          <div id="o-detallar" class="detallar" role="group" aria-label="Yaqindan ko‘rish"></div>
+          <span class="yorliq" data-til="yaqindan">Yaqindan ko‘rish</span>
+          <div id="o-detallar" class="detallar" role="group" data-til-aria="yaqindan"></div>
         </div>
 
         <div id="o-olchamlar" class="kel guruh" style="--k:4" hidden>
-          <span class="yorliq">O‘lchamlar</span>
+          <span class="yorliq" data-til="olchamlar">O‘lchamlar</span>
           <div class="detallar"></div>
         </div>
 
         <div class="kel buyurtma" style="--k:5">
           <strong id="o-narx"></strong>
-          <a class="tugma" data-instagram="tugma" href="#" target="_blank" rel="noopener"><span>Instagramda yozish</span></a>
+          <a class="tugma" data-instagram="tugma" href="#" target="_blank" rel="noopener"><span data-til="instagramda">Instagramda yozish</span></a>
           <a class="telefon" data-telefon href="#"></a>
         </div>
       </div>
@@ -107,7 +118,6 @@
   </dialog>
 
   <!-- Tartibi muhim: raqami bo‘yicha -->
-  <script src="js/1-mahsulotlar.js"></script>
   <script src="js/2-animatsiyalar.js"></script>
   <script src="js/3-zarralar.js"></script>
   <script src="js/4-katalog.js"></script>

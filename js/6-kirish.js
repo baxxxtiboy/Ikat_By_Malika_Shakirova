@@ -1,8 +1,9 @@
 /* =====================================================================
    6-KIRISH.JS  —  SAYTGA KIRISH SAHNASI VA SAHIFA SEHRLARI
-   1) oltin eshik ochilishi (sayt birinchi ochilganda)
-   2) sichqoncha ortidan oltin iz
-   3) kartochkalar ekranga chiqqanda parda kabi ochiladi
+   1) oltin eshik ochilishi (faqat kuchli rejimda)
+   2) sichqoncha ortidan oltin iz (faqat kuchli rejimda)
+   3) kartochkalar ekranga chiqqanda: soddada asta paydo bo‘ladi,
+      kuchlida parda kabi ochiladi
    Eng pastida sayt ishga tushiriladi.
    ===================================================================== */
 
@@ -17,7 +18,7 @@ async function eshikniOch() {
     korgan = sessionStorage.getItem("kirish") === "1";
     sessionStorage.setItem("kirish", "1");
   } catch { /* brauzer xotirasi yopiq bo‘lsa ham ishlayveradi */ }
-  if (korgan || HARAKAT_KAM || topMahsulot(location.hash.slice(1))) return eshik.remove();
+  if (SODDA || korgan || HARAKAT_KAM || topMahsulot(location.hash.slice(1))) return eshik.remove();
 
   eshik.hidden = false;
   const bosildi = new Promise((r) => eshik.addEventListener("click", r, { once: true }));
@@ -43,7 +44,11 @@ addEventListener("pointermove", (e) => {
 
 /* ---------- 3) Kartochkalar pardasi ---------- */
 function kartalarniPardala() {
-  if (HARAKAT_KAM || !("IntersectionObserver" in window)) return;
+  const rasmlar = document.querySelectorAll(".karta-rasm");
+  if (HARAKAT_KAM || !("IntersectionObserver" in window)) {
+    rasmlar.forEach((r) => r.classList.add("ochilgan"));
+    return;
+  }
 
   function pardaniOch(rasm) {
     rasm.classList.add("ochilgan");
@@ -57,12 +62,12 @@ function kartalarniPardala() {
       kuzatuvchi.unobserve(k.target);
       const karta = k.target.closest(".karta");
       const tartib = [...karta.parentElement.children].indexOf(karta);
-      setTimeout(() => pardaniOch(k.target), (tartib % 3) * 170);   // birin-ketin
+      setTimeout(() => pardaniOch(k.target), (tartib % 3) * (SODDA ? 90 : 170));   // birin-ketin
     });
   }, { threshold: 0.15 });
 
-  document.querySelectorAll(".karta-rasm").forEach((rasm) => {
-    rasm.insertAdjacentHTML("beforeend", `<i class="parda chap"></i><i class="parda ong"></i>`);
+  rasmlar.forEach((rasm) => {
+    if (!SODDA) rasm.insertAdjacentHTML("beforeend", `<i class="parda chap"></i><i class="parda ong"></i>`);
     kuzatuvchi.observe(rasm);
   });
 }
@@ -70,6 +75,7 @@ function kartalarniPardala() {
 addEventListener("resize", sahifaZarra.olchamla);
 
 /* ---------- SAYTNI ISHGA TUSHIRISH ---------- */
+tilTugmalari();
 katalogniChiz();
 aloqaniYoz();
 sahifaZarra.boshla(34);

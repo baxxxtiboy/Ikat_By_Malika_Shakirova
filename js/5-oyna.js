@@ -1,7 +1,9 @@
 /* =====================================================================
    5-OYNA.JS  —  MAHSULOT OCHILGANDA NIMA BO‘LADI
    ---------------------------------------------------------------------
-   Ketma-ketlik:
+   Sodda rejim: kartochka ramkaga silliq siljiydi, matn asta chiqadi.
+
+   Kuchli rejim ketma-ketligi:
      1. Kartochka kometadek uchib, 3D aylanadi (orqasida oltin naqsh)
      2. Qo‘nganda zarba: chaqnoq, to‘lqin, uchqunlar, silkinish
      3. Mahsulotning o‘z effekti (2-animatsiyalar.js) rasmni ochadi
@@ -10,12 +12,9 @@
    ===================================================================== */
 
 /* --- Tezliklar (millisekundda). Sekinroq xohlasangiz kattalashtiring --- */
-const VAQT = {
-  uchish: 1250,
-  ochilish: 2500,
-  rangAlmashish: 1700,
-  yopilish: 950,
-};
+const VAQT = SODDA
+  ? { uchish: 650, ochilish: 600, rangAlmashish: 600, yopilish: 300 }       // sodda
+  : { uchish: 1250, ochilish: 2500, rangAlmashish: 1700, yopilish: 950 };   // kuchli
 
 const NAQSH = "rasmlar/naqsh.jpg";
 
@@ -26,6 +25,7 @@ const sahnaCanvas = topish("#sahna-canvas");
 const zarra = zarralarYarat(topish("#oyna-zarra"));
 
 let ochiq = null;          // hozir ochiq turgan mahsulot
+let yaqinRaqam = -1;       // qaysi detal yaqinlashtirilgan (-1 = to‘liq)
 let navbatRaqam = 0;       // tez-tez bosilganda eski animatsiyani bekor qiladi
 
 const topMahsulot = (id) => MAHSULOTLAR.find((m) => m.id === id);
@@ -36,10 +36,10 @@ function malumotniYoz(m) {
   const toplam = TOPLAMLAR[m.toplam];
   const qardoshlar = MAHSULOTLAR.filter((x) => x.toplam === m.toplam);
 
-  topish("#o-toplam").textContent = toplam.nomi;
-  topish("#o-tavsif").textContent = m.tavsif;
+  topish("#o-toplam").textContent = tarjima(toplam.nomi);
+  topish("#o-tavsif").textContent = tarjima(m.tavsif);
   topish("#o-narx").textContent = narxYoz(m.narx);
-  topish("#o-rang-nomi").textContent = m.rang.nomi;
+  topish("#o-rang-nomi").textContent = tarjima(m.rang.nomi);
   topish("#o-hisob").textContent = `${MAHSULOTLAR.indexOf(m) + 1} / ${MAHSULOTLAR.length}`;
 
   // Nomi: har bir harf alohida <span>, shunda birma-bir chiqadi
@@ -50,8 +50,8 @@ function malumotniYoz(m) {
     return `<span class="harf" style="--n:${n++}; ${joy}">${matn(h)}</span>`;
   };
   const soz = (s) => `<span class="soz" aria-hidden="true">${[...s].map(harf).join("")}</span>`;
-  topish("#o-nomi").setAttribute("aria-label", m.nomi);
-  topish("#o-nomi").innerHTML = m.nomi.split(" ").map(soz).join(" ");
+  topish("#o-nomi").setAttribute("aria-label", tarjima(m.nomi));
+  topish("#o-nomi").innerHTML = tarjima(m.nomi).split(" ").map(soz).join(" ");
 
   topish("#o-ranglar").innerHTML = qardoshlar.map((x) => rangTugma(x, x === m)).join("");
 
@@ -60,16 +60,17 @@ function malumotniYoz(m) {
 
   const detalTugma = (nomi, i) =>
     `<button type="button" class="detal" data-detal="${i}" aria-pressed="${i === -1}">${matn(nomi)}</button>`;
-  topish("#o-detallar").innerHTML = detalTugma("To‘liq", -1) + toplam.detallar.map((d, i) => detalTugma(d.nomi, i)).join("");
+  topish("#o-detallar").innerHTML = detalTugma(yozuv("toliq"), -1) + toplam.detallar.map((d, i) => detalTugma(tarjima(d.nomi), i)).join("");
 
   // Oyna orqasidagi yorug‘lik ko‘ylak rangiga moslashadi
   oyna.style.setProperty("--tus", m.rang.tus1);
   zarra.ranglar = [...ZARRA_RANGLARI, m.rang.tus1, m.rang.tus2, m.rang.tus2];   // uchqunlar ham
-  document.title = m.nomi + " | " + DOKON.nomi;
+  document.title = tarjima(m.nomi) + " | " + DOKON.nomi;
 }
 
 /* ---------- Detalga yaqinlashish ---------- */
 function yaqinlashtir(raqam) {
+  yaqinRaqam = raqam;
   const d = TOPLAMLAR[ochiq.toplam].detallar[raqam];
   topish("#o-detallar").querySelectorAll(".detal").forEach((b) =>
     b.setAttribute("aria-pressed", Number(b.dataset.detal) === raqam));
@@ -87,9 +88,10 @@ function sahnaniTayyorla(m) {
   oyna.querySelectorAll(".uchuvchi").forEach((u) => u.remove());
   oyna.classList.remove("ochildi", "yopilmoqda", "portladi");
   sahna.style.visibility = "";
+  yaqinRaqam = -1;
   sahnaRasm.style.transform = "none";
   sahnaRasm.src = m.rasm;
-  sahnaRasm.alt = m.nomi;
+  sahnaRasm.alt = tarjima(m.nomi);
 }
 
 /* ---------- 1-qadam: kartochka uchib keladi ---------- */
@@ -109,6 +111,12 @@ async function uchir(qayerdan, m) {
   const ky = a.height / b.height;
   const holat = (x, y, sx, sy, burilish) =>
     `perspective(1400px) translate3d(${x}px, ${y}px, 0) scale(${sx}, ${sy}) rotateY(${burilish}deg)`;
+
+  if (SODDA) {                                  // silliq siljish, aylanmasdan
+    await uchuvchi.animate([{ transform: holat(dx, dy, kx, ky, 0) }, { transform: holat(0, 0, 1, 1, 0) }],
+      { duration: VAQT.uchish, easing: "cubic-bezier(.3,.7,.2,1)", fill: "forwards" }).finished;
+    return uchuvchi;
+  }
 
   // 540 gradus = bir yarim aylanish, oxirida orqasi (oltin naqsh) ko‘rinadi
   const parvoz = uchuvchi.animate([
@@ -157,7 +165,7 @@ async function ochilishniKorsat(m, eskiManzil, vaqt, eskirdi, sahnaSinfi = "zarb
   sahnaCanvas.hidden = false;
   const effekt = animatsiyaOyna(sahnaCanvas, m.animatsiya, eskiManzil, m.rasm, vaqt);
 
-  zarbaBer(sahnaSinfi);
+  if (!SODDA) zarbaBer(sahnaSinfi);
 
   await kut(vaqt * 0.35);
   if (eskirdi()) return;
@@ -204,8 +212,17 @@ async function mahsulotniOch(id, qayerdan = null, tarixga = true) {
     if (eskirdi()) return;
     sahna.style.visibility = "";
   } else {
-    await kut(350);
+    await kut(SODDA ? 0 : 350);
     if (eskirdi()) return;
+  }
+
+  if (SODDA) {                              // rasm darhol, matn asta chiqadi
+    sahnaRasm.hidden = false;
+    try { await sahnaRasm.decode(); } catch { /* rasm ochilmasa ham davom etamiz */ }
+    if (eskirdi()) return;
+    if (uchuvchi) uchuvchi.remove();
+    oyna.classList.add("ochildi");
+    return;
   }
 
   // Uchib kelgan nusxa ramka tayyor bo‘lgach olib tashlanadi
@@ -249,12 +266,13 @@ function qadam(necha) {
 async function oynaniYop() {
   if (!oyna.open || oyna.classList.contains("yopilmoqda")) return;
   const mening = ++navbatRaqam;
-  // Rasm ramka o‘lchamida kesiladi va parchalarga bo‘linadi
-  const rasm = await rasmYukla(ochiq.rasm);
-  if (mening !== navbatRaqam) return;
-  const joy = sahna.getBoundingClientRect();
-  if (rasm) zarra.parchala(kesibOl(rasm, Math.round(joy.width), Math.round(joy.height)), joy);
-  zarra.portlash(joy.left + joy.width / 2, joy.top + joy.height / 2, 140, 0.8);
+  if (!SODDA) {                           // rasm parchalarga bo‘linib uchadi
+    const rasm = await rasmYukla(ochiq.rasm);
+    if (mening !== navbatRaqam) return;
+    const joy = sahna.getBoundingClientRect();
+    if (rasm) zarra.parchala(kesibOl(rasm, Math.round(joy.width), Math.round(joy.height)), joy);
+    zarra.portlash(joy.left + joy.width / 2, joy.top + joy.height / 2, 140, 0.8);
+  }
   oyna.classList.add("yopilmoqda");
   await kut(VAQT.yopilish);
   if (mening !== navbatRaqam) return;     // yopilayotganda boshqasi ochilgan bo‘lsa
@@ -289,6 +307,15 @@ topish("#o-ranglar").addEventListener("click", (e) => {
 topish("#o-detallar").addEventListener("click", (e) => {
   const t = e.target.closest("[data-detal]");
   if (t) yaqinlashtir(Number(t.dataset.detal));
+});
+
+// Til almashganda ochiq mahsulot matni ham almashadi
+document.addEventListener("til-almashdi", () => {
+  if (!ochiq) return;
+  const raqam = yaqinRaqam;
+  malumotniYoz(ochiq);
+  sahnaRasm.alt = tarjima(ochiq.nomi);
+  yaqinlashtir(raqam);
 });
 
 // Telefonda rasmni chapga yoki o‘ngga surish

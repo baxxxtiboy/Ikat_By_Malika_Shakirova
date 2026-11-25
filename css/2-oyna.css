@@ -40,6 +40,7 @@
 }
 .oyna-tepa > * { pointer-events: auto; }
 #o-hisob { font-family: var(--sarlavha); color: var(--oltin-och); text-shadow: 0 0 8px #000; }
+.oyna-tepa .tillar { margin-left: auto; margin-right: 20px; }
 .oyna-boshqaruv { display: flex; gap: 8px; }
 .oyna-boshqaruv button {
   --kesim: 12px;
@@ -104,6 +105,10 @@
   .oyna-ichi { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 30px; padding: 76px 20px 48px; }
   #sahna { width: min(100%, 48svh); }
   .oyna-matn { gap: 20px; max-width: none; }
+  .oyna-tepa .tillar { margin-right: 8px; }
+  .oyna-tepa .tillar button { width: 36px; }
+  .oyna-boshqaruv { gap: 4px; }
   .oyna-tepa { padding-bottom: 14px; background: linear-gradient(rgb(5 7 6 / .85), transparent); }
   .oyna-fon { background: radial-gradient(90% 45% at 50% 30%, color-mix(in srgb, var(--tus) 48%, transparent), transparent 80%), linear-gradient(var(--qora) 55%, var(--zumrad-toq)); }
 }
+@media (max-width: 370px) { #o-hisob { display: none; } }

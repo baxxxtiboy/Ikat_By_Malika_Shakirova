@@ -11,14 +11,14 @@ const topish = (selektor, ichida = document) => ichida.querySelector(selektor);
 // Oddiy matnni xavfsiz qiladi ( <, & kabi belgilar sahifani buzmasin )
 const matn = (s) => String(s).replace(/[&<>"]/g, (b) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[b]));
 
-// 1500000  ->  "1 500 000 so‘m"
+// 1500000  ->  "1 500 000 so‘m".  0 bo‘lsa "Narxi so‘rov bo‘yicha"
 const narxYoz = (narx) =>
-  narx ? String(narx).replace(/\B(?=(\d{3})+$)/g, " ") + " " + DOKON.valyuta : "Narxi so‘rov bo‘yicha";
+  narx ? String(narx).replace(/\B(?=(\d{3})+$)/g, " ") + " " + yozuv("valyuta") : yozuv("narxSorov");
 
 // Rang tugmachasi (zumrad shaklida)
 const rangTugma = (m, tanlangan) => `
   <button class="rang" type="button" data-rang="${m.id}" aria-pressed="${tanlangan}"
-          aria-label="${matn(m.rang.nomi)}" title="${matn(m.rang.nomi)}"
+          aria-label="${matn(tarjima(m.rang.nomi))}" title="${matn(tarjima(m.rang.nomi))}"
           style="--tus1:${m.rang.tus1}; --tus2:${m.rang.tus2}"><span></span></button>`;
 
 /* ---------- 1) Tepadagi katta rasm ---------- */
@@ -33,17 +33,24 @@ function boshRasmniQur() {
   let hozirgi = 0;
   let soat;
 
-  ranglar.innerHTML = royxat.map((m, i) => rangTugma(m, i === 0)).join("");
+  // Ko‘ylak nomi va rang tugmalari (til almashganda ham chaqiriladi)
+  function yozuvlar() {
+    const m = royxat[hozirgi];
+    nomi.textContent = tarjima(m.nomi);
+    ramka.setAttribute("aria-label", yozuv("ochish") + ": " + tarjima(m.nomi));
+    ranglar.innerHTML = royxat.map((x) => rangTugma(x, x === m)).join("");
+  }
+  document.addEventListener("til-almashdi", yozuvlar);
 
   function korsat(i, eskiManzil) {
     const eski = eskiManzil || royxat[hozirgi].rasm;
     const m = royxat[i];
     hozirgi = i;
-    nomi.textContent = m.nomi;
-    ramka.setAttribute("aria-label", m.nomi + ", ochish");
+    nomi.textContent = tarjima(m.nomi);
+    ramka.setAttribute("aria-label", yozuv("ochish") + ": " + tarjima(m.nomi));
     ranglar.querySelectorAll(".rang").forEach((b) => b.setAttribute("aria-pressed", b.dataset.rang === m.id));
     const effektlar = ["iplar", "gavhar", "olmos"];      // har rang o‘z effekti bilan
-    animatsiyaOyna(canvas, effektlar[i % effektlar.length], eski, m.rasm, 2000);
+    animatsiyaOyna(canvas, effektlar[i % effektlar.length], eski, m.rasm, SODDA ? 1100 : 2000);
   }
 
   // Har 6 sekundda keyingi rangga o‘tadi
@@ -68,7 +75,8 @@ function boshRasmniQur() {
 
   ramka.addEventListener("click", () => mahsulotniOch(royxat[hozirgi].id, ramka));
 
-  korsat(0, "rasmlar/naqsh.jpg");   // birinchi marta oltin naqshdan to‘qiladi
+  yozuvlar();
+  korsat(0, "rasmlar/naqsh.jpg");   // birinchi marta oltin naqshdan chiqadi
   keyingisiniKut();
 }
 
@@ -76,11 +84,11 @@ function boshRasmniQur() {
 const kartaHtml = (m) => `
   <a class="karta" href="#${m.id}" data-id="${m.id}">
     <span class="zumrad karta-rasm">
-      <img src="${m.rasm}" alt="${matn(m.nomi)}, ${matn(m.rang.nomi)} rang" loading="lazy">
+      <img src="${m.rasm}" alt="${matn(tarjima(m.nomi))}, ${matn(tarjima(m.rang.nomi))}" loading="lazy">
     </span>
     <span class="karta-matn">
-      <strong>${matn(m.nomi)}</strong>
-      <small>${matn(m.rang.nomi)}, ${narxYoz(m.narx).toLowerCase()}</small>
+      <strong>${matn(tarjima(m.nomi))}</strong>
+      <small>${matn(tarjima(m.rang.nomi))}, ${m.narx ? narxYoz(m.narx) : narxYoz(0).toLowerCase()}</small>
     </span>
   </a>`;
 
@@ -91,27 +99,35 @@ function katalogniChiz() {
     return `
       <section class="toplam" aria-labelledby="t-${kalit}">
         <header class="toplam-bosh">
-          <h2 id="t-${kalit}">${matn(toplam.nomi)}</h2>
-          <p>${matn(toplam.tavsif)}</p>
+          <h2 id="t-${kalit}">${matn(tarjima(toplam.nomi))}</h2>
+          <p>${matn(tarjima(toplam.tavsif))}</p>
         </header>
         <div class="qator">${ichidagi.map(kartaHtml).join("")}</div>
       </section>`;
   }).join("");
 
-  // Kartochka bosilganda mahsulot oynasi ochiladi (5-oyna.js)
-  topish("#katalog").addEventListener("click", (e) => {
-    const karta = e.target.closest(".karta");
-    if (!karta || e.ctrlKey || e.metaKey) return;
-    e.preventDefault();
-    mahsulotniOch(karta.dataset.id, topish(".karta-rasm", karta));
-  });
-
   document.querySelectorAll(".karta-rasm").forEach(qiyshaytir);
 }
 
+// Kartochka bosilganda mahsulot oynasi ochiladi (5-oyna.js)
+topish("#katalog").addEventListener("click", (e) => {
+  const karta = e.target.closest(".karta");
+  if (!karta || e.ctrlKey || e.metaKey) return;
+  e.preventDefault();
+  mahsulotniOch(karta.dataset.id, topish(".karta-rasm", karta));
+});
+
+// Til almashganda katalog yangi tilda qayta chiziladi (surilgan joyi saqlanadi)
+document.addEventListener("til-almashdi", () => {
+  const surilgan = [...document.querySelectorAll(".qator")].map((q) => q.scrollLeft);
+  katalogniChiz();
+  document.querySelectorAll(".karta-rasm").forEach((r) => r.classList.add("ochilgan"));
+  document.querySelectorAll(".qator").forEach((q, i) => { q.scrollLeft = surilgan[i]; });
+});
+
 // Element sichqonchaga qarab 3D egiladi (CSS dagi --ex, --ey ni o‘zgartiradi)
 function qiyshaytir(element) {
-  if (HARAKAT_KAM) return;
+  if (HARAKAT_KAM || SODDA) return;
   element.addEventListener("pointermove", (e) => {
     if (e.pointerType !== "mouse") return;
     const r = element.getBoundingClientRect();

@@ -1,0 +1,43 @@
+/* =====================================================================
+   4-SODDA.CSS  —  SODDA REJIM KO‘RINISHI
+   1-mahsulotlar.js da  animatsiya: "sodda"  bo‘lsa shu fayl ishlaydi,
+   "kuchli" bo‘lsa buning o‘rniga 3-sehr.css ishlaydi.
+   ===================================================================== */
+
+/* Kuchli rejimning bezaklari ko‘rinmaydi */
+#kirish, #sahifa-zarra, #oyna-zarra, .chaqnoq, .nur { display: none; }
+.bosh h1 { animation: none; background-position: 45% 0; }
+
+/* ---------- Kartochkalar: sekin paydo bo‘ladi ---------- */
+.karta-rasm { opacity: 0; translate: 0 22px; transition: opacity .7s, translate .7s var(--silliq); }
+.karta-rasm.ochilgan { opacity: 1; translate: 0 0; }
+.karta:hover .karta-rasm img { scale: 1.03; }
+.karta-rasm::before, .zumrad::after { display: none; }
+.rang:hover { transform: none; }
+
+/* ---------- Oyna ochilishi: fon yumshoq keladi ---------- */
+#oyna[open] .oyna-fon { animation: fon-kel .45s ease-out; }
+@keyframes fon-kel { from { opacity: 0; } }
+
+/* Kartochka oltin hoshiyasi bilan birga siljiydi */
+.uchuvchi {
+  --kesim: clamp(28px, 4vw, 54px);
+  background: var(--oltin-metall);
+  clip-path: polygon(
+    var(--kesim) 0, calc(100% - var(--kesim)) 0, 100% var(--kesim), 100% calc(100% - var(--kesim)),
+    calc(100% - var(--kesim)) 100%, var(--kesim) 100%, 0 calc(100% - var(--kesim)), 0 var(--kesim));
+}
+.uchuvchi .yuz { inset: 3px; }
+.uchuvchi .orqa { display: none; }
+
+/* ---------- Matn: sokin paydo bo‘ladi ---------- */
+.harf { opacity: 1; transform: none; filter: none; }
+#o-nomi { opacity: 0; }
+.ochildi #o-nomi { opacity: 1; transition: opacity .5s .05s; }
+.kel { transform: translateY(10px); }
+.ochildi .kel { transition: opacity .5s, transform .5s var(--silliq); transition-delay: calc(.08s + var(--k) * 50ms); }
+
+/* ---------- Detalga yaqinlashish va yopilish ---------- */
+#sahna-rasm { transition-duration: .9s; }
+#oyna.yopilmoqda { animation: oyna-ket .3s ease-in forwards; }
+@keyframes oyna-ket { to { opacity: 0; } }

@@ -17,6 +17,9 @@ const ZARRA_RANGLARI = ["#f3d27a", "#c99a3b", "#fff1c4", "#1fb27c", "#f3d27a"];
 // Telefonda zarralar kamroq bo‘ladi, sekinlashmasligi uchun
 const ZARRA_KUCHI = innerWidth < 820 ? 0.5 : 1;
 
+// Sodda rejimda zarralar umuman chiqmaydi
+const ZARRA_YOQ = HARAKAT_KAM || SODDA;
+
 // Yumshoq nurli nuqta rasmi. Har bir rang uchun bir marta chiziladi
 const nurlar = {};
 function nurNuqta(rang) {
@@ -57,7 +60,7 @@ function zarralarYarat(canvas) {
   z.boshla = (soni = 60) => {
     z.olchamla();
     royxat = [];
-    if (HARAKAT_KAM) return;
+    if (ZARRA_YOQ) return;
     for (let i = 0; i < soni * ZARRA_KUCHI; i++) qosh({
       tur: "chang", umr: 1, kamayish: 0,
       x: Math.random() * canvas.width, y: Math.random() * canvas.height,
@@ -67,7 +70,7 @@ function zarralarYarat(canvas) {
   };
 
   z.portlash = (x, y, soni = 200, kuch = 1) => {
-    if (HARAKAT_KAM) return;
+    if (ZARRA_YOQ) return;
     for (let i = 0; i < soni * ZARRA_KUCHI; i++) {
       const burchak = Math.random() * Math.PI * 2;
       const tezlik = (3 + Math.random() * 19) * kuch;
@@ -80,14 +83,14 @@ function zarralarYarat(canvas) {
   };
 
   z.zarba = (x, y) => {
-    if (HARAKAT_KAM) return;
+    if (ZARRA_YOQ) return;
     [0, 9, 18].forEach((kutish, i) => qosh({   // uchta halqa ketma-ket
       tur: "halqa", umr: 1, kamayish: 0.018, kutish, x, y, r: 60, vx: 0, vy: 0, rang: i === 1 ? "#1fb27c" : "#f3d27a",
     }));
   };
 
   z.yutilish = (x, y, soni = 90) => {
-    if (HARAKAT_KAM) return;
+    if (ZARRA_YOQ) return;
     for (let i = 0; i < soni * ZARRA_KUCHI; i++) {
       const burchak = Math.random() * Math.PI * 2;
       const uzoq = 260 + Math.random() * 520;
@@ -101,7 +104,7 @@ function zarralarYarat(canvas) {
   };
 
   z.iz = (x, y, soni = 4) => {
-    if (HARAKAT_KAM) return;
+    if (ZARRA_YOQ) return;
     for (let i = 0; i < soni; i++) qosh({
       tur: "uchqun", umr: 1, kamayish: 0.022 + Math.random() * 0.02,
       x: x + (Math.random() - 0.5) * 14, y: y + (Math.random() - 0.5) * 14,
@@ -112,7 +115,7 @@ function zarralarYarat(canvas) {
 
   // rasm — canvas, joy — uning ekrandagi o‘rni (getBoundingClientRect)
   z.parchala = (rasm, joy) => {
-    if (HARAKAT_KAM) return;
+    if (ZARRA_YOQ) return;
     const ustunlar = ZARRA_KUCHI === 1 ? 9 : 6;
     const a = joy.width / ustunlar;
     const qatorlar = Math.round(joy.height / a);
