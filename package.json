@@ -1,0 +1,11 @@
+{
+  "name": "ikat-by-malika-shakirova",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Ikat by Malika Shakirova - katalog sayti",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node --check server.js"
+  },
+  "engines": { "node": ">=18" }
+}

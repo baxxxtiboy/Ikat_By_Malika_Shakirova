@@ -24,3 +24,8 @@ Ochish: `index.html` ustiga ikki marta bosing. Hech narsa o‘rnatish kerak emas
 - **Yangi to‘plam:** `TOPLAMLAR` ga yangi bo‘lim qo‘shing
 - **Rang o‘zgartirish:** `1-asosiy.css` boshidagi `:root`
 - **Tezlik:** `5-oyna.js` boshidagi `VAQT`
+
+## Internetga chiqarish
+
+Papkada: `git add -A`, `git commit -m "nima o'zgardi"`, `git push`. Render saytni o‘zi yangilaydi.
+`server.js` va `package.json` faqat Render uchun. Eski do‘kon kodi `eski-dokon` branchida saqlangan.
