@@ -42,10 +42,11 @@ function boshRasmniQur() {
     nomi.textContent = m.nomi;
     ramka.setAttribute("aria-label", m.nomi + ", ochish");
     ranglar.querySelectorAll(".rang").forEach((b) => b.setAttribute("aria-pressed", b.dataset.rang === m.id));
-    animatsiyaOyna(canvas, "iplar", eski, m.rasm, 1900);
+    const effektlar = ["iplar", "gavhar", "olmos"];      // har rang o‘z effekti bilan
+    animatsiyaOyna(canvas, effektlar[i % effektlar.length], eski, m.rasm, 2000);
   }
 
-  // Har 4.8 sekundda keyingi rangga o‘tadi
+  // Har 6 sekundda keyingi rangga o‘tadi
   function keyingisiniKut() {
     clearInterval(soat);
     if (HARAKAT_KAM) return;
@@ -54,7 +55,7 @@ function boshRasmniQur() {
       const korinadi = ramka.getBoundingClientRect().bottom > 0;
       if (document.hidden || topish("#oyna").open || !korinadi) return;
       korsat((hozirgi + 1) % royxat.length);
-    }, 4800);
+    }, 6000);
   }
 
   ranglar.addEventListener("click", (e) => {
@@ -116,8 +117,8 @@ function qiyshaytir(element) {
     const r = element.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width;    // 0..1
     const y = (e.clientY - r.top) / r.height;
-    element.style.setProperty("--ey", (x - 0.5) * 12 + "deg");
-    element.style.setProperty("--ex", (0.5 - y) * 10 + "deg");
+    element.style.setProperty("--ey", (x - 0.5) * 20 + "deg");
+    element.style.setProperty("--ex", (0.5 - y) * 16 + "deg");
     element.style.setProperty("--yx", x * 100 + "%");
     element.style.setProperty("--yy", y * 100 + "%");
   });

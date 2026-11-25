@@ -9,8 +9,17 @@
   <link rel="icon" href="rasmlar/favicon.png">
   <link rel="stylesheet" href="css/1-asosiy.css">
   <link rel="stylesheet" href="css/2-oyna.css">
+  <link rel="stylesheet" href="css/3-sehr.css">
 </head>
 <body>
+
+  <!-- ============ KIRISHDAGI OLTIN ESHIK (6-kirish.js) ============ -->
+  <div id="kirish" aria-hidden="true" hidden>
+    <div class="tavaqa"></div>
+    <div class="tavaqa ong"></div>
+    <div class="muhr"><img src="rasmlar/belgi.webp" alt=""></div>
+  </div>
+  <canvas id="sahifa-zarra" aria-hidden="true"></canvas>
 
   <!-- ============ TEPA QISM ============ -->
   <div class="bosh">
@@ -48,6 +57,7 @@
   <dialog id="oyna" aria-labelledby="o-nomi">
     <div class="oyna-fon"></div>
     <canvas id="oyna-zarra"></canvas>
+    <div class="chaqnoq"></div>
 
     <div class="oyna-tepa">
       <span id="o-hisob"></span>
@@ -102,5 +112,6 @@
   <script src="js/3-zarralar.js"></script>
   <script src="js/4-katalog.js"></script>
   <script src="js/5-oyna.js"></script>
+  <script src="js/6-kirish.js"></script>
 </body>
 </html>

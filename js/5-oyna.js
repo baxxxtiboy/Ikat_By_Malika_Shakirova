@@ -2,18 +2,19 @@
    5-OYNA.JS  —  MAHSULOT OCHILGANDA NIMA BO‘LADI
    ---------------------------------------------------------------------
    Ketma-ketlik:
-     1. Kartochka joyidan uchib, 3D aylanadi (orqasida oltin naqsh)
-     2. Qo‘nganda oltin uchqunlar portlaydi
+     1. Kartochka kometadek uchib, 3D aylanadi (orqasida oltin naqsh)
+     2. Qo‘nganda zarba: chaqnoq, to‘lqin, uchqunlar, silkinish
      3. Mahsulotning o‘z effekti (2-animatsiyalar.js) rasmni ochadi
-     4. Nomi harfma-harf chiqadi, ma’lumotlar birin-ketin keladi
+     4. Nomi harfma-harf uchib keladi, ma’lumotlar birin-ketin chiqadi
+     5. Yopilganda rasm parchalanib ketadi
    ===================================================================== */
 
 /* --- Tezliklar (millisekundda). Sekinroq xohlasangiz kattalashtiring --- */
 const VAQT = {
-  uchish: 950,
-  ochilish: 1900,
-  rangAlmashish: 1300,
-  yopilish: 420,
+  uchish: 1250,
+  ochilish: 2500,
+  rangAlmashish: 1700,
+  yopilish: 950,
 };
 
 const NAQSH = "rasmlar/naqsh.jpg";
@@ -43,7 +44,11 @@ function malumotniYoz(m) {
 
   // Nomi: har bir harf alohida <span>, shunda birma-bir chiqadi
   let n = 0;
-  const harf = (h) => `<span class="harf" style="--n:${n++}">${matn(h)}</span>`;
+  // --hx, --hy, --hr: harf qayerdan va qanday burilib uchib keladi
+  const harf = (h) => {
+    const joy = `--hx:${(tasodif(n) - 0.5) * 500}px; --hy:${(tasodif(n + 50) - 0.5) * 420}px; --hr:${(tasodif(n + 90) - 0.5) * 260}deg`;
+    return `<span class="harf" style="--n:${n++}; ${joy}">${matn(h)}</span>`;
+  };
   const soz = (s) => `<span class="soz" aria-hidden="true">${[...s].map(harf).join("")}</span>`;
   topish("#o-nomi").setAttribute("aria-label", m.nomi);
   topish("#o-nomi").innerHTML = m.nomi.split(" ").map(soz).join(" ");
@@ -59,6 +64,7 @@ function malumotniYoz(m) {
 
   // Oyna orqasidagi yorug‘lik ko‘ylak rangiga moslashadi
   oyna.style.setProperty("--tus", m.rang.tus1);
+  zarra.ranglar = [...ZARRA_RANGLARI, m.rang.tus1, m.rang.tus2, m.rang.tus2];   // uchqunlar ham
   document.title = m.nomi + " | " + DOKON.nomi;
 }
 
@@ -67,6 +73,8 @@ function yaqinlashtir(raqam) {
   const d = TOPLAMLAR[ochiq.toplam].detallar[raqam];
   topish("#o-detallar").querySelectorAll(".detal").forEach((b) =>
     b.setAttribute("aria-pressed", Number(b.dataset.detal) === raqam));
+  const s = sahna.getBoundingClientRect();
+  zarra.portlash(s.left + s.width / 2, s.top + s.height / 2, 50, 0.6);
   if (!d) { sahnaRasm.style.transform = "none"; return; }
   // Nuqta markazga keladi, lekin rasm chetidan bo‘sh joy ko‘rinmaydi
   const chegara = (d.zoom - 1) * 50;
@@ -77,7 +85,7 @@ function yaqinlashtir(raqam) {
 /* ---------- Ramkani yangi mahsulotga tayyorlash ---------- */
 function sahnaniTayyorla(m) {
   oyna.querySelectorAll(".uchuvchi").forEach((u) => u.remove());
-  oyna.classList.remove("ochildi", "yopilmoqda");
+  oyna.classList.remove("ochildi", "yopilmoqda", "portladi");
   sahna.style.visibility = "";
   sahnaRasm.style.transform = "none";
   sahnaRasm.src = m.rasm;
@@ -102,25 +110,54 @@ async function uchir(qayerdan, m) {
   const holat = (x, y, sx, sy, burilish) =>
     `perspective(1400px) translate3d(${x}px, ${y}px, 0) scale(${sx}, ${sy}) rotateY(${burilish}deg)`;
 
-  await uchuvchi.animate([
+  // 540 gradus = bir yarim aylanish, oxirida orqasi (oltin naqsh) ko‘rinadi
+  const parvoz = uchuvchi.animate([
     { transform: holat(dx, dy, kx, ky, 0) },
-    { transform: holat(dx * 0.35, dy * 0.35 - 40, (kx + 1) / 2, (ky + 1) / 2, 100), offset: 0.5 },
-    { transform: holat(0, 0, 1, 1, 180) },
-  ], { duration: VAQT.uchish, easing: "cubic-bezier(.45,.05,.2,1)", fill: "forwards" }).finished;
+    { transform: holat(dx * 0.45, dy * 0.45 - 70, kx * 0.75, ky * 0.75, 260), offset: 0.5 },
+    { transform: holat(0, 0, 1.12, 1.12, 540), offset: 0.88 },
+    { transform: holat(0, 0, 1, 1, 540) },
+  ], { duration: VAQT.uchish, easing: "cubic-bezier(.45,.05,.25,1)", fill: "forwards" });
 
+  // Uchayotganda ortidan kometa izi qoladi
+  (function izQoldir() {
+    if (parvoz.playState !== "running" || !uchuvchi.isConnected) return;
+    const r = uchuvchi.getBoundingClientRect();
+    zarra.iz(r.left + r.width * Math.random(), r.top + r.height * Math.random(), 5);
+    requestAnimationFrame(izQoldir);
+  })();
+  // Qo‘nishdan oldin zarralar markazga so‘riladi
+  setTimeout(() => uchuvchi.isConnected && zarra.yutilish(b.left + b.width / 2, b.top + b.height / 2), VAQT.uchish * 0.45);
+
+  await parvoz.finished;
   return uchuvchi;
 }
 
 /* ---------- 2, 3, 4-qadamlar: portlash, effekt, matn ---------- */
-async function ochilishniKorsat(m, eskiManzil, vaqt, eskirdi) {
+// Sinfni olib, qayta qo‘shadi: CSS animatsiya boshidan boshlanadi
+function qaytaBoshla(element, sinf, boshqalar = []) {
+  element.classList.remove(sinf, ...boshqalar);
+  void element.offsetWidth;
+  element.classList.add(sinf);
+}
+
+function zarbaBer(sahnaSinfi) {
+  const s = sahna.parentElement.getBoundingClientRect();
+  const x = s.left + s.width / 2;
+  const y = s.top + s.height / 2;
+  oyna.style.setProperty("--cx", x + "px");
+  oyna.style.setProperty("--cy", y + "px");
+  qaytaBoshla(oyna, "portladi");                          // chaqnoq va silkinish
+  qaytaBoshla(sahna, sahnaSinfi, ["zarba", "burildi"]);   // ramka harakati
+  zarra.zarba(x, y);
+  zarra.portlash(x, y, 260);
+  setTimeout(() => oyna.open && zarra.portlash(x, y, 90, 0.6), 260);   // ikkinchi portlash
+}
+
+async function ochilishniKorsat(m, eskiManzil, vaqt, eskirdi, sahnaSinfi = "zarba") {
   sahnaCanvas.hidden = false;
   const effekt = animatsiyaOyna(sahnaCanvas, m.animatsiya, eskiManzil, m.rasm, vaqt);
 
-  const s = sahna.getBoundingClientRect();
-  zarra.portlash(s.left + s.width / 2, s.top + s.height / 2);
-  sahna.classList.remove("zarba");
-  void sahna.offsetWidth;                 // shu qator animatsiyani qaytadan boshlatadi
-  sahna.classList.add("zarba");
+  zarbaBer(sahnaSinfi);
 
   await kut(vaqt * 0.35);
   if (eskirdi()) return;
@@ -180,7 +217,8 @@ async function mahsulotniOch(id, qayerdan = null, tarixga = true) {
 }
 
 /* ---------- Oyna ichida boshqa ko‘ylakka o‘tish ---------- */
-async function boshqasigaOt(m) {
+// tomon: 1 — ramka o‘ngdan buriladi, -1 — chapdan
+async function boshqasigaOt(m, tomon = 1) {
   if (!m || m === ochiq) return;
   const mening = ++navbatRaqam;
   const eskirdi = () => mening !== navbatRaqam;
@@ -193,7 +231,8 @@ async function boshqasigaOt(m) {
   const tugash = (() => {
     malumotniYoz(m);
     sahnaniTayyorla(m);
-    return ochilishniKorsat(m, eskiManzil, VAQT.rangAlmashish, eskirdi);
+    sahna.style.setProperty("--tomon", tomon);
+    return ochilishniKorsat(m, eskiManzil, VAQT.rangAlmashish, eskirdi, "burildi");
   })();
   history.replaceState(null, "", "#" + m.id);
   await tugash;
@@ -203,18 +242,24 @@ async function boshqasigaOt(m) {
 function qadam(necha) {
   if (!ochiq) return;
   const i = MAHSULOTLAR.indexOf(ochiq);
-  boshqasigaOt(MAHSULOTLAR[(i + necha + MAHSULOTLAR.length) % MAHSULOTLAR.length]);
+  boshqasigaOt(MAHSULOTLAR[(i + necha + MAHSULOTLAR.length) % MAHSULOTLAR.length], necha);
 }
 
 /* ---------- YOPISH ---------- */
 async function oynaniYop() {
   if (!oyna.open || oyna.classList.contains("yopilmoqda")) return;
   const mening = ++navbatRaqam;
+  // Rasm ramka o‘lchamida kesiladi va parchalarga bo‘linadi
+  const rasm = await rasmYukla(ochiq.rasm);
+  if (mening !== navbatRaqam) return;
+  const joy = sahna.getBoundingClientRect();
+  if (rasm) zarra.parchala(kesibOl(rasm, Math.round(joy.width), Math.round(joy.height)), joy);
+  zarra.portlash(joy.left + joy.width / 2, joy.top + joy.height / 2, 140, 0.8);
   oyna.classList.add("yopilmoqda");
   await kut(VAQT.yopilish);
   if (mening !== navbatRaqam) return;     // yopilayotganda boshqasi ochilgan bo‘lsa
   oyna.close();
-  oyna.classList.remove("yopilmoqda", "ochildi");
+  oyna.classList.remove("yopilmoqda", "ochildi", "portladi");
   oyna.querySelectorAll(".uchuvchi").forEach((u) => u.remove());
   sahna.style.visibility = "";
   sahnaCanvas.raqam = (sahnaCanvas.raqam || 0) + 1;
@@ -268,9 +313,3 @@ addEventListener("popstate", () => {
   if (!m) oynaniYop();
   else if (m !== ochiq) mahsulotniOch(m.id, null, false);
 });
-
-/* ---------- SAYTNI ISHGA TUSHIRISH ---------- */
-katalogniChiz();
-aloqaniYoz();
-boshRasmniQur();
-if (topMahsulot(location.hash.slice(1))) mahsulotniOch(location.hash.slice(1), null, false);

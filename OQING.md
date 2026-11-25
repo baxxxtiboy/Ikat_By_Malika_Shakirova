@@ -10,9 +10,11 @@ Ochish: `index.html` ustiga ikki marta bosing. Hech narsa o‘rnatish kerak emas
 | `js/2-animatsiyalar.js` | 6 ta ochilish effekti |
 | `js/3-zarralar.js` | Oltin chang va uchqunlar |
 | `js/4-katalog.js` | Bosh sahifa va kartochkalar |
+| `js/6-kirish.js` | Kirishdagi oltin eshik, sichqoncha izi, kartochka pardalari |
 | `js/5-oyna.js` | Mahsulot ochilishi (tezliklar: `VAQT`) |
 | `css/1-asosiy.css` | Ranglar (`:root`), bosh sahifa |
 | `css/2-oyna.css` | Ochilgan mahsulot ko‘rinishi |
+| `css/3-sehr.css` | Chaqnoq, silkinish, eshik, harflar, yopilish |
 
 ## Tez-tez kerak bo‘ladigan ishlar
 
