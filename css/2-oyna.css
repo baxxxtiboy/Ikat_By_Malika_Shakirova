@@ -1,0 +1,122 @@
+/* =====================================================================
+   2-OYNA.CSS  —  OCHILGAN MAHSULOT OYNASI
+   ===================================================================== */
+
+#oyna {
+  --tus: var(--zumrad);        /* ko‘ylak rangi, JS o‘zgartiradi */
+  --bx: 50vw; --by: 50vh;      /* bosilgan nuqta, JS o‘zgartiradi */
+  width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  color: var(--matn); background: none; overflow: hidden auto; overscroll-behavior: contain;
+}
+#oyna::backdrop { background: none; }
+
+/* ---------- Fon: bosilgan joydan zumrad shaklida kengayadi ---------- */
+.oyna-fon {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(52% 60% at 30% 50%, color-mix(in srgb, var(--tus) 42%, transparent), transparent 75%),
+    radial-gradient(70% 90% at 85% 100%, var(--zumrad-toq), transparent 70%),
+    var(--qora);
+}
+#oyna[open] .oyna-fon { animation: gavhar-ochil .8s cubic-bezier(.6, 0, .2, 1); }
+@keyframes gavhar-ochil {
+  from { clip-path: polygon(
+    calc(var(--bx) - 30px) calc(var(--by) - 70px), calc(var(--bx) + 30px) calc(var(--by) - 70px),
+    calc(var(--bx) + 50px) calc(var(--by) - 45px), calc(var(--bx) + 50px) calc(var(--by) + 45px),
+    calc(var(--bx) + 30px) calc(var(--by) + 70px), calc(var(--bx) - 30px) calc(var(--by) + 70px),
+    calc(var(--bx) - 50px) calc(var(--by) + 45px), calc(var(--bx) - 50px) calc(var(--by) - 45px)); }
+  to { clip-path: polygon(
+    calc(var(--bx) - 150vmax) calc(var(--by) - 350vmax), calc(var(--bx) + 150vmax) calc(var(--by) - 350vmax),
+    calc(var(--bx) + 250vmax) calc(var(--by) - 225vmax), calc(var(--bx) + 250vmax) calc(var(--by) + 225vmax),
+    calc(var(--bx) + 150vmax) calc(var(--by) + 350vmax), calc(var(--bx) - 150vmax) calc(var(--by) + 350vmax),
+    calc(var(--bx) - 250vmax) calc(var(--by) + 225vmax), calc(var(--bx) - 250vmax) calc(var(--by) - 225vmax)); }
+}
+#oyna-zarra { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+
+/* ---------- Tepadagi tugmalar ---------- */
+.oyna-tepa {
+  position: fixed; inset: 0 0 auto; z-index: 5; display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+  padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 0 max(22px, env(safe-area-inset-left));
+}
+.oyna-tepa > * { pointer-events: auto; }
+#o-hisob { font-family: var(--sarlavha); color: var(--oltin-och); text-shadow: 0 0 8px #000; }
+.oyna-boshqaruv { display: flex; gap: 8px; }
+.oyna-boshqaruv button {
+  --kesim: 12px;
+  width: 46px; height: 46px; display: grid; place-items: center; color: var(--oltin-och); background: rgb(4 41 29 / .85);
+  transition: background .3s;
+}
+.oyna-boshqaruv button:hover, .oyna-boshqaruv button:focus-visible { background: var(--zumrad-yorqin); color: #fff; }
+.oyna-boshqaruv svg { width: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+/* ---------- Joylashuv ---------- */
+.oyna-ichi {
+  position: relative; z-index: 2; min-height: 100%;
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: clamp(30px, 5vw, 90px);
+  padding: 40px max(24px, 6vw);
+}
+.sahna-joy { position: relative; display: grid; place-items: center; }
+#sahna { --kesim: clamp(28px, 4vw, 54px); --hoshiya: 3px; width: min(100%, 58svh); aspect-ratio: 2 / 2.9; }
+/* rasm chiqmaguncha ramkada oltin naqsh turadi */
+#sahna::before { content: ""; position: absolute; inset: 3px; background: url(../rasmlar/naqsh.jpg) center / cover; }
+.rasm-joy { position: absolute; inset: var(--hoshiya); }
+#sahna-rasm { width: 100%; height: 100%; object-fit: cover; transition: transform 1.3s cubic-bezier(.6, 0, .1, 1); }
+
+/* ortidagi aylanuvchi oltin nur */
+.nur {
+  position: absolute; width: min(150%, 130svh); aspect-ratio: 1; pointer-events: none; opacity: 0; transition: opacity 1.6s;
+  background: repeating-conic-gradient(rgb(217 178 90 / .17) 0 2deg, transparent 4deg 15deg);
+  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 95%); mask: radial-gradient(closest-side, #000 25%, transparent 95%);
+  animation: aylan 90s linear infinite;
+}
+.ochildi .nur { opacity: 1; }
+@keyframes aylan { to { rotate: 360deg; } }
+
+/* qo‘nish zarbasi */
+#sahna.zarba { animation: zarba .7s var(--silliq); }
+@keyframes zarba { from { scale: 1.07; filter: brightness(2.2); } to { scale: 1; filter: brightness(1); } }
+
+/* ---------- Uchib keluvchi kartochka ---------- */
+.uchuvchi { position: fixed; z-index: 4; transform-style: preserve-3d; pointer-events: none; }
+.uchuvchi .yuz { --kesim: clamp(28px, 4vw, 54px); position: absolute; inset: 0; backface-visibility: hidden; background: center / cover; }
+.uchuvchi .orqa { transform: rotateY(180deg); background-image: url(../rasmlar/naqsh.jpg); }
+
+/* ---------- Matn ---------- */
+.oyna-matn { display: grid; gap: 24px; justify-items: start; min-width: 0; max-width: 560px; }
+#o-toplam { color: var(--oltin); font-weight: 500; }
+#o-nomi { font-size: clamp(2.4rem, 5.2vw, 4.8rem); margin-top: -14px; color: var(--oltin-och); perspective: 700px; }
+.soz { display: inline-block; white-space: nowrap; }
+.harf { display: inline-block; opacity: 0; transform: translateY(.7em) rotateX(-95deg) scale(.7); filter: blur(8px); transform-origin: 50% 100%; }
+.ochildi .harf { animation: harf .9s var(--silliq) calc(var(--n) * 55ms) forwards; }
+@keyframes harf {
+  60% { color: #fff; text-shadow: 0 0 26px var(--oltin); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.kel { opacity: 0; transform: translateY(26px); }
+.ochildi .kel { opacity: 1; transform: none; transition: opacity .8s, transform .9s var(--silliq); transition-delay: calc(.25s + var(--k) * 90ms); }
+#o-tavsif { font-size: 1.05rem; max-width: 46ch; }
+.guruh { display: grid; gap: 12px; }
+.yorliq { font-size: .92rem; color: var(--matn-xira); }
+.yorliq b { font-weight: 500; color: var(--matn); }
+.detallar { display: flex; flex-wrap: wrap; gap: 8px; }
+.detal, .olcham { --kesim: 9px; padding: 10px 18px; font-size: .92rem; background: rgb(217 178 90 / .16); transition: background .3s, color .3s; }
+.detal:hover { background: rgb(217 178 90 / .3); }
+.detal[aria-pressed="true"] { background: var(--zumrad); color: var(--oltin-och); }
+.detal:focus-visible { box-shadow: inset 0 0 0 2px var(--oltin-och); }
+.buyurtma { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+.buyurtma strong { width: 100%; font: 500 1.35rem var(--sarlavha); }
+.telefon { font-weight: 500; color: var(--oltin-och); white-space: nowrap; }
+.telefon:hover { text-decoration: underline; text-underline-offset: 5px; }
+
+/* ---------- Yopilish ---------- */
+#oyna.yopilmoqda { animation: yopil .42s ease-in forwards; }
+@keyframes yopil { to { opacity: 0; transform: scale(1.06); filter: blur(10px); } }
+
+/* ---------- TELEFON ---------- */
+@media (max-width: 820px) {
+  .oyna-ichi { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 30px; padding: 76px 20px 48px; }
+  #sahna { width: min(100%, 48svh); }
+  .oyna-matn { gap: 20px; max-width: none; }
+  .oyna-tepa { padding-bottom: 14px; background: linear-gradient(rgb(5 7 6 / .85), transparent); }
+  .oyna-fon { background: radial-gradient(90% 45% at 50% 30%, color-mix(in srgb, var(--tus) 48%, transparent), transparent 80%), linear-gradient(var(--qora) 55%, var(--zumrad-toq)); }
+}

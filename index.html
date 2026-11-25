@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050706">
+  <meta name="description" content="Ikat by Malika Shakirova. Ikat ko‘ylaklar katalogi.">
+  <title>Ikat by Malika Shakirova</title>
+  <link rel="icon" href="rasmlar/favicon.png">
+  <link rel="stylesheet" href="css/1-asosiy.css">
+  <link rel="stylesheet" href="css/2-oyna.css">
+</head>
+<body>
+
+  <!-- ============ TEPA QISM ============ -->
+  <div class="bosh">
+    <header class="bosh-matn">
+      <img class="belgi" src="rasmlar/belgi.webp" alt="" width="360" height="360">
+      <h1><span>Ikat by</span> Malika Shakirova</h1>
+      <p>Rangni tanlang, ko‘ylak ko‘z oldingizda ipma-ip qayta to‘qiladi.</p>
+      <div class="bosh-tanlov">
+        <div id="bosh-ranglar" class="ranglar" role="group" aria-label="Ko‘ylak rangi"></div>
+        <span id="bosh-nomi"></span>
+      </div>
+      <a class="tugma" href="#katalog"><span>Katalogni ko‘rish</span></a>
+    </header>
+
+    <button id="bosh-rasm" class="zumrad" type="button" aria-label="Ko‘ylakni ochish">
+      <img src="rasmlar/naqsh.jpg" alt="">
+      <canvas></canvas>
+    </button>
+  </div>
+
+  <!-- ============ KATALOG (4-katalog.js to‘ldiradi) ============ -->
+  <main id="katalog"></main>
+
+  <!-- ============ PASTKI QISM ============ -->
+  <footer class="past">
+    <div class="past-quti">
+      <img class="belgi" src="rasmlar/belgi.webp" alt="" width="360" height="360" loading="lazy">
+      <p>Buyurtma va narxlar uchun</p>
+      <a class="past-tel" data-telefon href="#"></a>
+      <a data-instagram="nom" href="#" target="_blank" rel="noopener"></a>
+    </div>
+  </footer>
+
+  <!-- ============ OCHILGAN MAHSULOT OYNASI (5-oyna.js boshqaradi) ============ -->
+  <dialog id="oyna" aria-labelledby="o-nomi">
+    <div class="oyna-fon"></div>
+    <canvas id="oyna-zarra"></canvas>
+
+    <div class="oyna-tepa">
+      <span id="o-hisob"></span>
+      <div class="oyna-boshqaruv">
+        <button type="button" id="o-oldingi" aria-label="Oldingi ko‘ylak"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg></button>
+        <button type="button" id="o-keyingi" aria-label="Keyingi ko‘ylak"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg></button>
+        <button type="button" id="o-yop" aria-label="Yopish"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+      </div>
+    </div>
+
+    <div class="oyna-ichi">
+      <div class="sahna-joy">
+        <div class="nur"></div>
+        <div id="sahna" class="zumrad">
+          <div class="rasm-joy"><img id="sahna-rasm" alt="" hidden></div>
+          <canvas id="sahna-canvas" hidden></canvas>
+        </div>
+      </div>
+
+      <div class="oyna-matn">
+        <p id="o-toplam" class="kel" style="--k:0"></p>
+        <h2 id="o-nomi"></h2>
+        <p id="o-tavsif" class="kel" style="--k:1"></p>
+
+        <div class="kel guruh" style="--k:2">
+          <span class="yorliq">Rang: <b id="o-rang-nomi"></b></span>
+          <div id="o-ranglar" class="ranglar" role="group" aria-label="Rang"></div>
+        </div>
+
+        <div class="kel guruh" style="--k:3">
+          <span class="yorliq">Yaqindan ko‘rish</span>
+          <div id="o-detallar" class="detallar" role="group" aria-label="Yaqindan ko‘rish"></div>
+        </div>
+
+        <div id="o-olchamlar" class="kel guruh" style="--k:4" hidden>
+          <span class="yorliq">O‘lchamlar</span>
+          <div class="detallar"></div>
+        </div>
+
+        <div class="kel buyurtma" style="--k:5">
+          <strong id="o-narx"></strong>
+          <a class="tugma" data-instagram="tugma" href="#" target="_blank" rel="noopener"><span>Instagramda yozish</span></a>
+          <a class="telefon" data-telefon href="#"></a>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Tartibi muhim: raqami bo‘yicha -->
+  <script src="js/1-mahsulotlar.js"></script>
+  <script src="js/2-animatsiyalar.js"></script>
+  <script src="js/3-zarralar.js"></script>
+  <script src="js/4-katalog.js"></script>
+  <script src="js/5-oyna.js"></script>
+</body>
+</html>

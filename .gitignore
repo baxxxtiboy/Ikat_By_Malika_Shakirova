@@ -1,8 +1,2 @@
-node_modules
-.next
 .env
-.env.example
-.env.*
-!.env.example
-data/
-*.log
+node_modules/
